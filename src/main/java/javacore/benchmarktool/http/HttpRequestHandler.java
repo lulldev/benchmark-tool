@@ -7,29 +7,24 @@ import java.net.URL;
 import java.net.SocketTimeoutException;
 import java.time.Duration;
 
-class RequestTask implements Runnable {
-    private final HttpConnectionFactory factory;
-    private final RequestListener listener;
+class HttpRequestHandler implements Runnable {
+    private final HttpConnection httpConnection;
+    private final HttpRequestListener listener;
     private final URL url;
     private long readByteCount;
     private int httpStatusCode;
 
-    /**
-     * @param factory - object which can create connection for given URL
-     * @param listener - object which listens complete/exception events, will be called concurrently
-     * @param url - url which should be requested
-     */
-    RequestTask(HttpConnectionFactory factory, RequestListener listener, URL url) {
-        this.factory = factory;
-        this.listener = listener;
+    HttpRequestHandler(URL url, HttpConnection httpConnection, HttpRequestListener listener) {
         this.url = url;
+        this.httpConnection = httpConnection;
+        this.listener = listener;
     }
 
     public void run() {
         HttpURLConnection conn = null;
         try {
             final long startTimeNano = System.nanoTime();
-            conn = factory.openConnection(url);
+            conn = httpConnection.open(url);
             readResponse(conn);
             final long durationNano = System.nanoTime() - startTimeNano;
             listener.onRequestComplete(Duration.ofNanos(durationNano), this.readByteCount, this.httpStatusCode);
